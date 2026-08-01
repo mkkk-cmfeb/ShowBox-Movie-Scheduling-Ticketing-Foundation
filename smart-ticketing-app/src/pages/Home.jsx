@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+
+//this is the 1st git changes
+
 function Home() {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
