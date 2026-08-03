@@ -25,18 +25,16 @@ public class AuthController {
     @Autowired
     private UserRepository userRepository;
 
-    // JWT banane ke liye secret key
     private final String SECRET = "MySuperSecretKeyForShowboxProjectWhichMustBeVeryLong2026";
     private final SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes());
 
-    // 1. REGISTER API (Saves Plain Text Password)
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
         if (userRepository.existsByEmail(user.getEmail())) {
-            return ResponseEntity.badRequest().body("Email already exists!");
+            // 🛠️ NAYA: Error ko JSON format mein bhejna
+            return ResponseEntity.badRequest().body(Map.of("message", "Email already exists!"));
         }
 
-        // Pehla user hamesha "ADMIN" banega, baaki sab "CUSTOMER"
         if(userRepository.count() == 0) {
             user.setRole("ADMIN");
         }
@@ -45,7 +43,6 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "User registered successfully!"));
     }
 
-    // 2. LOGIN API (Checks Plain Text Password)
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody User loginRequest) {
         Optional<User> userOptional = userRepository.findByEmail(loginRequest.getEmail());
@@ -53,20 +50,17 @@ public class AuthController {
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             
-            // NAYA: Plain text comparison (No BCrypt)
             if (loginRequest.getPassword().equals(user.getPassword())) {
                 
-                // JWT TOKEN GENERATION
                 String jwtToken = Jwts.builder()
                         .subject(user.getEmail())
                         .claim("role", user.getRole()) 
                         .claim("name", user.getName())
                         .issuedAt(new Date())
-                        .expiration(new Date(System.currentTimeMillis() + 86400000)) // 1 Day Expiry
+                        .expiration(new Date(System.currentTimeMillis() + 86400000))
                         .signWith(key)
                         .compact();
 
-                // Token aur Details React ko bhejna
                 return ResponseEntity.ok(Map.of(
                         "token", jwtToken,
                         "email", user.getEmail(),
@@ -75,6 +69,7 @@ public class AuthController {
                 ));
             }
         }
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid Email or Password");
+        // 🛠️ NAYA: Error ko JSON format mein bhejna
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid Email or Password"));
     }
 }
