@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [errorMsg, setErrorMsg] = useState('');
-  const navigate = useNavigate();
 
   const API_BASE = "http://localhost:8080/api/Auth";
 
@@ -30,27 +28,36 @@ function Auth() {
 
       if (response.ok) {
         if (isLogin) {
-          // 🔑 Save JWT Token & User Info to LocalStorage
+          // STRICT ROLE HANDLING: Hamesha UPPERCASE mein save karega
+          const userRole = data.role ? data.role.toUpperCase() : "CUSTOMER";
+
+          // LOCAL STORAGE SAVE
           localStorage.setItem("token", data.token);
           localStorage.setItem("user", JSON.stringify({
-            name: data.name,
+            name: data.name || "Admin",
             email: data.email,
-            role: data.role
+            role: userRole 
           }));
 
-          alert(`Welcome back, ${data.name}! 🎉`);
-          navigate(data.role === "ADMIN" ? "/admin" : "/");
-          window.location.reload(); // Refresh navbar state
+          alert(`Login Successful! Welcome, ${data.name || 'Admin'}`);
+          
+          // DIRECT REDIRECT (React ke caching issues ko bypass karne ke liye)
+          if (userRole === "ADMIN") {
+             window.location.href = "/admin";
+          } else {
+             window.location.href = "/";
+          }
+          
         } else {
-          alert("🎉 Registration Successful! Please Sign In now.");
-          setIsLogin(true); // Switch to Sign In form
+          alert("Registration Successful! Please sign in now.");
+          setIsLogin(true); // Switch to login screen
         }
       } else {
-        setErrorMsg(typeof data === 'string' ? data : (data.message || "Something went wrong!"));
+        setErrorMsg(data.message || "Invalid Credentials!");
       }
     } catch (error) {
       console.error("Auth Error:", error);
-      setErrorMsg("Unable to connect to the server. Is Spring Boot running?");
+      setErrorMsg("Server error! Make sure Spring Boot is running.");
     }
   };
 
@@ -65,37 +72,11 @@ function Auth() {
 
         <form onSubmit={handleSubmit} style={styles.form}>
           {!isLogin && (
-            <input
-              type="text"
-              name="name"
-              placeholder="Full Name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              style={styles.input}
-            />
+            <input type="text" name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required style={styles.input} />
           )}
-
-          <input
-            type="email"
-            name="email"
-            placeholder="Email Address"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            style={styles.input}
-          />
-
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-            style={styles.input}
-          />
-
+          <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required style={styles.input} />
+          <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} required style={styles.input} />
+          
           <button type="submit" style={styles.submitBtn}>
             {isLogin ? 'Sign In' : 'Sign Up'}
           </button>
@@ -103,10 +84,7 @@ function Auth() {
 
         <p style={{ textAlign: 'center', marginTop: '20px', color: '#7f8c8d' }}>
           {isLogin ? "Don't have an account? " : "Already have an account? "}
-          <span 
-            onClick={() => setIsLogin(!isLogin)} 
-            style={{ color: '#e74c3c', cursor: 'pointer', fontWeight: 'bold' }}
-          >
+          <span onClick={() => setIsLogin(!isLogin)} style={{ color: '#e74c3c', cursor: 'pointer', fontWeight: 'bold' }}>
             {isLogin ? 'Sign Up' : 'Sign In'}
           </span>
         </p>
@@ -120,8 +98,8 @@ const styles = {
   card: { backgroundColor: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' },
   form: { display: 'flex', flexDirection: 'column', gap: '15px' },
   input: { padding: '12px', borderRadius: '8px', border: '1px solid #cccccc', fontSize: '1rem', outline: 'none' },
-  submitBtn: { backgroundColor: '#2c3e50', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer', transition: '0.3s' },
-  errorBox: { backgroundColor: '#f8d7da', color: '#721c24', padding: '10px', borderRadius: '8px', marginBottom: '15px', textAlign: 'center', fontSize: '0.9rem' }
+  submitBtn: { backgroundColor: '#2c3e50', color: 'white', border: 'none', padding: '12px', borderRadius: '8px', fontSize: '1rem', fontWeight: 'bold', cursor: 'pointer' },
+  errorBox: { backgroundColor: '#f8d7da', color: '#721c24', padding: '10px', borderRadius: '8px', marginBottom: '15px', textAlign: 'center' }
 };
 
 export default Auth;
