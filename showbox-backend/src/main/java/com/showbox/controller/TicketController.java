@@ -1,7 +1,7 @@
 package com.showbox.controller;
 
 import com.showbox.model.Ticket;
-import com.showbox.repository.TicketRepository;
+import com.showbox.service.TicketService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,31 +14,26 @@ import java.util.List;
 public class TicketController {
 
     @Autowired
-    private TicketRepository ticketRepository;
+    private TicketService ticketService;
 
     // 1. Create a new booking
     @PostMapping
     public ResponseEntity<Ticket> bookTicket(@RequestBody Ticket ticket) {
-        // Automatically set status to CONFIRMED for now (before Razorpay integration)
-        if(ticket.getStatus() == null || ticket.getStatus().isEmpty()) {
-            ticket.setStatus("CONFIRMED");
-        }
-        
-        Ticket savedTicket = ticketRepository.save(ticket);
+        Ticket savedTicket = ticketService.bookTicket(ticket);
         return ResponseEntity.ok(savedTicket);
     }
 
     // 2. Fetch all bookings for the logged-in user's MyBookings page
     @GetMapping("/user/{email}")
     public ResponseEntity<List<Ticket>> getUserTickets(@PathVariable String email) {
-        List<Ticket> userTickets = ticketRepository.findByUserEmail(email);
+        List<Ticket> userTickets = ticketService.getUserTickets(email);
         return ResponseEntity.ok(userTickets);
     }
     
  // 3. Fetch all bookings for a specific show (to block booked seats on the map)
     @GetMapping("/show/{showId}")
     public ResponseEntity<List<Ticket>> getShowTickets(@PathVariable Long showId) {
-        List<Ticket> showTickets = ticketRepository.findByShowScheduleId(showId);
+        List<Ticket> showTickets = ticketService.getShowTickets(showId);
         return ResponseEntity.ok(showTickets);
     }
 }

@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.showbox.model.City;
-import com.showbox.repository.CityRepository;
+import com.showbox.service.CityService;
 import java.util.List;
 
 @RestController
@@ -13,19 +13,19 @@ import java.util.List;
 public class CityController {
 
     @Autowired
-    private CityRepository cityRepository;
+    private CityService cityService;
 
     @GetMapping
     public List<City> getAllCities() {
-        return cityRepository.findAll();
+        return cityService.getAllCities();
     }
 
     @PostMapping
     public ResponseEntity<?> addCity(@RequestBody City city) {
-        // Validation: Duplicate city check
-        if (cityRepository.existsByNameIgnoreCase(city.getName())) {
+        try {
+            return ResponseEntity.ok(cityService.addCity(city));
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Ye City pehle se database mein add hai!");
         }
-        return ResponseEntity.ok(cityRepository.save(city));
     }
 }
