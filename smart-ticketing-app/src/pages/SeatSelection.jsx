@@ -10,20 +10,23 @@ function SeatSelection() {
   const [theatre, setTheatre] = useState(null);
   
   const [selectedSeats, setSelectedSeats] = useState([]);
-  const [bookedSeats, setBookedSeats] = useState([]); // NEW: State to hold booked seats
+  const [bookedSeats, setBookedSeats] = useState([]); 
   const [isLoading, setIsLoading] = useState(true);
+  
+  // NEW: 5-Minute Timer State (300 seconds)
+  const [timeLeft, setTimeLeft] = useState(300);
 
   const API_BASE = "http://localhost:8080/api";
+  const MAX_SEATS = 6;
 
   useEffect(() => {
     const fetchShowDetails = async () => {
       try {
-        // We now fetch the booked tickets for this specific show at the same time
         const [schedulesRes, moviesRes, theatresRes, ticketsRes] = await Promise.all([
           fetch(`${API_BASE}/ShowSchedules`),
           fetch(`${API_BASE}/Movies`),
           fetch(`${API_BASE}/Theatres`),
-          fetch(`${API_BASE}/Bookings/show/${showId}`) // Fetch booked tickets
+          fetch(`${API_BASE}/Bookings/show/${showId}`) 
         ]);
 
         if (schedulesRes.ok && moviesRes.ok && theatresRes.ok) {
@@ -34,7 +37,6 @@ function SeatSelection() {
           let bookedSeatArray = [];
           if (ticketsRes.ok) {
               const tickets = await ticketsRes.json();
-              // Extract all seats from all tickets (e.g., "A1, A2" -> ["A1", "A2"])
               tickets.forEach(ticket => {
                   if(ticket.seats) {
                       const seats = ticket.seats.split(',').map(s => s.trim());
@@ -62,6 +64,28 @@ function SeatSelection() {
     fetchShowDetails();
   }, [showId]);
 
+  // NEW: Timer Effect - Starts counting down when seats are selected
+  useEffect(() => {
+    let timer;
+    if (selectedSeats.length > 0) {
+      timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            alert("Your 5-minute reservation window has expired. Seats have been released.");
+            setSelectedSeats([]); // Clear seats
+            return 300; // Reset timer
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      setTimeLeft(300); // Reset timer if user deselects all seats
+    }
+
+    return () => clearInterval(timer);
+  }, [selectedSeats.length]);
+
   const seatLayout = [
     { tier: 'Premium', priceKey: 'premiumPrice', rows: ['A', 'B'] },
     { tier: 'Executive', priceKey: 'executivePrice', rows: ['C', 'D', 'E', 'F'] },
@@ -70,14 +94,20 @@ function SeatSelection() {
   const seatsPerRow = 12;
 
   const toggleSeat = (seatId, price) => {
-    // Prevent clicking if the seat is already booked
     if (bookedSeats.includes(seatId)) return;
 
     setSelectedSeats(prev => {
       const isSelected = prev.find(s => s.id === seatId);
+      
+      // If the seat is already selected, allow them to deselect it
       if (isSelected) {
         return prev.filter(s => s.id !== seatId); 
       } else {
+        // NEW: Strict Max 6 Seats Validation
+        if (prev.length >= MAX_SEATS) {
+          alert(`You can only select a maximum of ${MAX_SEATS} seats per transaction to prevent bulk blocking.`);
+          return prev;
+        }
         return [...prev, { id: seatId, price }]; 
       }
     });
@@ -133,6 +163,13 @@ function SeatSelection() {
     }
   };
 
+  // Helper to format MM:SS
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
   if (isLoading) return <h2 style={{ textAlign: 'center', marginTop: '100px' }}>Mapping Seats... 🎬</h2>;
   if (!schedule) return <h2 style={{ textAlign: 'center', marginTop: '100px', color: 'red' }}>Show not found!</h2>;
 
@@ -178,9 +215,8 @@ function SeatSelection() {
                       const seatId = `${rowLabel}${seatNum}`;
                       
                       const isSelected = selectedSeats.some(s => s.id === seatId);
-                      const isBooked = bookedSeats.includes(seatId); // Check if booked
+                      const isBooked = bookedSeats.includes(seatId); 
                       
-                      // Determine correct style
                       let currentStyle = styles.seatAvailable;
                       if (isBooked) currentStyle = styles.seatBooked;
                       else if (isSelected) currentStyle = styles.seatSelected;
@@ -190,7 +226,7 @@ function SeatSelection() {
                           key={seatId}
                           onClick={() => toggleSeat(seatId, schedule[category.priceKey])}
                           style={currentStyle}
-                          disabled={isBooked} // Physically disable the button
+                          disabled={isBooked} 
                           title={isBooked ? 'Already Booked' : `${seatId} - ₹${schedule[category.priceKey]}`}
                         >
                           {seatNum}
@@ -212,9 +248,15 @@ function SeatSelection() {
               <p style={{ margin: '0 0 5px 0', color: '#fff', fontSize: '1.2rem' }}>
                 {selectedSeats.length} Ticket(s) Selected
               </p>
-              <p style={{ margin: 0, color: '#bdc3c7', fontSize: '0.9rem' }}>
-                {selectedSeats.map(s => s.id).join(', ')}
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                <p style={{ margin: 0, color: '#bdc3c7', fontSize: '0.9rem' }}>
+                  {selectedSeats.map(s => s.id).join(', ')}
+                </p>
+                {/* NEW: Timer UI Element */}
+                <span style={styles.timerBadge}>
+                  ⏳ {formatTime(timeLeft)}
+                </span>
+              </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
               <h2 style={{ margin: 0, color: '#fff' }}>Total: ₹{calculateTotal()}</h2>
@@ -244,14 +286,13 @@ const styles = {
   
   seatAvailable: { width: '30px', height: '30px', backgroundColor: 'white', border: '1px solid #2ecc71', borderRadius: '5px 5px 10px 10px', cursor: 'pointer', color: '#2ecc71', fontSize: '0.7rem', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', transition: '0.2s' },
   seatSelected: { width: '30px', height: '30px', backgroundColor: '#2ecc71', border: '1px solid #2ecc71', borderRadius: '5px 5px 10px 10px', cursor: 'pointer', color: 'white', fontSize: '0.7rem', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', transform: 'scale(1.1)', transition: '0.2s' },
-  // NEW: Grayed out style for booked seats
   seatBooked: { width: '30px', height: '30px', backgroundColor: '#ecf0f1', border: '1px solid #bdc3c7', borderRadius: '5px 5px 10px 10px', cursor: 'not-allowed', color: '#bdc3c7', fontSize: '0.7rem', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center' },
   
   bottomBar: { position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: '#2c3e50', padding: '15px 20px', boxShadow: '0 -4px 10px rgba(0,0,0,0.1)', zIndex: 20 },
-  payBtn: { padding: '12px 30px', backgroundColor: '#F84464', color: 'white', border: 'none', borderRadius: '5px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px rgba(248, 68, 100, 0.3)' }
+  payBtn: { padding: '12px 30px', backgroundColor: '#F84464', color: 'white', border: 'none', borderRadius: '5px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px rgba(248, 68, 100, 0.3)' },
+  
+  // NEW: Timer Badge Styling
+  timerBadge: { backgroundColor: '#e74c3c', color: 'white', padding: '3px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold', letterSpacing: '1px' }
 };
 
 export default SeatSelection;
-
-
-//dfgfdghgfhgfe
