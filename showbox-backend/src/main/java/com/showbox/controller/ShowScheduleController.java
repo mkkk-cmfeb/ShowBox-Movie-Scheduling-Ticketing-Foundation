@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.showbox.model.ShowSchedule;
-import com.showbox.service.ShowScheduleService;
+import com.showbox.repository.ShowScheduleRepository;
 import java.util.List;
 
 @RestController
@@ -13,19 +13,19 @@ import java.util.List;
 public class ShowScheduleController {
 
     @Autowired
-    private ShowScheduleService showScheduleService;
+    private ShowScheduleRepository showScheduleRepository;
 
     @GetMapping
     public List<ShowSchedule> getAllSchedules() {
-        return showScheduleService.getAllSchedules();
+        return showScheduleRepository.findAll();
     }
 
     @PostMapping
     public ResponseEntity<?> addSchedule(@RequestBody ShowSchedule schedule) {
-        try {
-            return ResponseEntity.ok(showScheduleService.addSchedule(schedule));
-        } catch (IllegalArgumentException e) {
+        // Validation: No Overlap Rule
+        if (showScheduleRepository.hasTimeConflict(schedule.getTheatreId(), schedule.getShowTime(), schedule.getEndTime())) {
             return ResponseEntity.badRequest().body("Clash Error! Is theatre mein is time par pehle se ek show chal raha hai.");
         }
+        return ResponseEntity.ok(showScheduleRepository.save(schedule));
     }
 }
