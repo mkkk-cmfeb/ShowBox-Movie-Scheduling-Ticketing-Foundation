@@ -10,6 +10,7 @@ function SeatSelection() {
   const [theatre, setTheatre] = useState(null);
   
   const [selectedSeats, setSelectedSeats] = useState([]);
+  const [bookedSeats, setBookedSeats] = useState([]); // NEW: State to hold booked seats
   const [isLoading, setIsLoading] = useState(true);
 
   const API_BASE = "http://localhost:8080/api";
@@ -17,20 +18,34 @@ function SeatSelection() {
   useEffect(() => {
     const fetchShowDetails = async () => {
       try {
-        const [schedulesRes, moviesRes, theatresRes] = await Promise.all([
+        // We now fetch the booked tickets for this specific show at the same time
+        const [schedulesRes, moviesRes, theatresRes, ticketsRes] = await Promise.all([
           fetch(`${API_BASE}/ShowSchedules`),
           fetch(`${API_BASE}/Movies`),
-          fetch(`${API_BASE}/Theatres`)
+          fetch(`${API_BASE}/Theatres`),
+          fetch(`${API_BASE}/Bookings/show/${showId}`) // Fetch booked tickets
         ]);
 
         if (schedulesRes.ok && moviesRes.ok && theatresRes.ok) {
           const schedules = await schedulesRes.json();
           const movies = await moviesRes.json();
           const theatres = await theatresRes.json();
+          
+          let bookedSeatArray = [];
+          if (ticketsRes.ok) {
+              const tickets = await ticketsRes.json();
+              // Extract all seats from all tickets (e.g., "A1, A2" -> ["A1", "A2"])
+              tickets.forEach(ticket => {
+                  if(ticket.seats) {
+                      const seats = ticket.seats.split(',').map(s => s.trim());
+                      bookedSeatArray = [...bookedSeatArray, ...seats];
+                  }
+              });
+          }
+          setBookedSeats(bookedSeatArray);
 
           const currentSchedule = schedules.find(s => s.id.toString() === showId.toString());
           
-          // 🔥 THE FIX: Changed 'currentMovie' to 'currentSchedule' here
           if (currentSchedule) {
             setSchedule(currentSchedule);
             setMovie(movies.find(m => m.id === currentSchedule.movieId));
@@ -55,6 +70,9 @@ function SeatSelection() {
   const seatsPerRow = 12;
 
   const toggleSeat = (seatId, price) => {
+    // Prevent clicking if the seat is already booked
+    if (bookedSeats.includes(seatId)) return;
+
     setSelectedSeats(prev => {
       const isSelected = prev.find(s => s.id === seatId);
       if (isSelected) {
@@ -69,17 +87,50 @@ function SeatSelection() {
     return selectedSeats.reduce((total, seat) => total + seat.price, 0);
   };
 
-  const handleProceedToPayment = () => {
+  const handleProceedToPayment = async () => {
     if (selectedSeats.length === 0) {
       alert("Please select at least one seat to proceed.");
       return;
     }
-    
-    // Simulating a successful payment and backend booking generation for now
-    alert(`Payment of ₹${calculateTotal()} successful! Generating your tickets...`);
-    
-    // Redirect to the My Bookings page
-    navigate('/my-tickets');
+
+    const userStr = localStorage.getItem("user");
+    if (!userStr) {
+      alert("Session expired. Please log in to book tickets.");
+      navigate('/auth');
+      return;
+    }
+    const loggedInUser = JSON.parse(userStr);
+
+    const ticketPayload = {
+      userEmail: loggedInUser.email,
+      showScheduleId: parseInt(showId),
+      movieTitle: movie.title,
+      theatreName: theatre.name,
+      showDate: schedule.showDate,
+      showTime: schedule.showTime.split('T')[1].substring(0, 5),
+      seats: selectedSeats.map(s => s.id).join(', '), 
+      totalAmount: calculateTotal(),
+      status: "CONFIRMED" 
+    };
+
+    try {
+      const response = await fetch(`${API_BASE}/Bookings`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(ticketPayload)
+      });
+
+      if (response.ok) {
+        alert(`Payment of ₹${calculateTotal()} successful! Generating your digital tickets...`);
+        navigate('/my-tickets');
+      } else {
+        const errorMsg = await response.text();
+        alert(`Booking failed: ${errorMsg}`);
+      }
+    } catch (error) {
+      console.error("Booking error:", error);
+      alert("Server connection failed. Is Spring Boot running?");
+    }
   };
 
   if (isLoading) return <h2 style={{ textAlign: 'center', marginTop: '100px' }}>Mapping Seats... 🎬</h2>;
@@ -125,14 +176,22 @@ function SeatSelection() {
                     {[...Array(seatsPerRow)].map((_, index) => {
                       const seatNum = index + 1;
                       const seatId = `${rowLabel}${seatNum}`;
-                      const isSelected = selectedSeats.some(s => s.id === seatId);
                       
+                      const isSelected = selectedSeats.some(s => s.id === seatId);
+                      const isBooked = bookedSeats.includes(seatId); // Check if booked
+                      
+                      // Determine correct style
+                      let currentStyle = styles.seatAvailable;
+                      if (isBooked) currentStyle = styles.seatBooked;
+                      else if (isSelected) currentStyle = styles.seatSelected;
+
                       return (
                         <button
                           key={seatId}
                           onClick={() => toggleSeat(seatId, schedule[category.priceKey])}
-                          style={isSelected ? styles.seatSelected : styles.seatAvailable}
-                          title={`${seatId} - ₹${schedule[category.priceKey]}`}
+                          style={currentStyle}
+                          disabled={isBooked} // Physically disable the button
+                          title={isBooked ? 'Already Booked' : `${seatId} - ₹${schedule[category.priceKey]}`}
                         >
                           {seatNum}
                         </button>
@@ -182,8 +241,12 @@ const styles = {
   row: { display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px', gap: '15px', minWidth: 'max-content' },
   rowLabel: { width: '20px', color: '#95a5a6', fontWeight: 'bold', textAlign: 'center' },
   seats: { display: 'flex', gap: '8px' },
+  
   seatAvailable: { width: '30px', height: '30px', backgroundColor: 'white', border: '1px solid #2ecc71', borderRadius: '5px 5px 10px 10px', cursor: 'pointer', color: '#2ecc71', fontSize: '0.7rem', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', transition: '0.2s' },
   seatSelected: { width: '30px', height: '30px', backgroundColor: '#2ecc71', border: '1px solid #2ecc71', borderRadius: '5px 5px 10px 10px', cursor: 'pointer', color: 'white', fontSize: '0.7rem', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', transform: 'scale(1.1)', transition: '0.2s' },
+  // NEW: Grayed out style for booked seats
+  seatBooked: { width: '30px', height: '30px', backgroundColor: '#ecf0f1', border: '1px solid #bdc3c7', borderRadius: '5px 5px 10px 10px', cursor: 'not-allowed', color: '#bdc3c7', fontSize: '0.7rem', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center' },
+  
   bottomBar: { position: 'fixed', bottom: 0, left: 0, right: 0, backgroundColor: '#2c3e50', padding: '15px 20px', boxShadow: '0 -4px 10px rgba(0,0,0,0.1)', zIndex: 20 },
   payBtn: { padding: '12px 30px', backgroundColor: '#F84464', color: 'white', border: 'none', borderRadius: '5px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 6px rgba(248, 68, 100, 0.3)' }
 };
