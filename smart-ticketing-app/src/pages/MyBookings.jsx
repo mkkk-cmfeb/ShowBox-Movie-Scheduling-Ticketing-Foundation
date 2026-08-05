@@ -2,126 +2,125 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 function MyBookings() {
-  const [bookings, setBookings] = useState([]);
-  const [schedules, setSchedules] = useState([]);
-  const [movies, setMovies] = useState([]);
-  const [theatres, setTheatres] = useState([]);
-  const [cities, setCities] = useState([]);
-  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const [bookings, setBookings] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState(null);
 
-  // Safe JSON Parsing taaki crash na ho
-  const userString = localStorage.getItem("user");
-  let user = null;
-  try {
-    user = userString ? JSON.parse(userString) : null;
-  } catch(e) {
-    user = null;
-  }
+  const API_BASE = "http://localhost:8080/api";
 
-const API_BASE = "http://localhost:8080/api";
   useEffect(() => {
-    // Agar user email nahi hai toh auth par bhej do
-    if (!user || !user.email) {
-      navigate('/auth'); 
+    // 1. Verify Authentication
+    const userStr = localStorage.getItem("user");
+    if (!userStr) {
+      navigate('/auth');
       return;
     }
-    fetchData();
-  }, []);
+    
+    const loggedInUser = JSON.parse(userStr);
+    setUser(loggedInUser);
 
-  const fetchData = async () => {
-    try {
-      // 1. Bookings laana (Crash Proof Logic ke sath)
-      const bRes = await fetch(`${API_BASE}/Bookings/user/${user.email}`);
-      if (bRes.ok) {
-        const data = await bRes.json();
-        // 🚨 CRASH SAVER: Agar data array hai tabhi set karo, warna empty array rakho
-        setBookings(Array.isArray(data) ? data : []); 
-      } else {
+    // 2. Fetch User's Tickets from Spring Boot
+    const fetchMyTickets = async () => {
+      try {
+        // NOTE: You will need to create this endpoint in your Java backend later
+        // e.g., @GetMapping("/Bookings/user/{email}")
+        const response = await fetch(`${API_BASE}/Bookings/user/${loggedInUser.email}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          setBookings(data);
+        } else {
+          // If backend isn't ready, we default to an empty array
+          setBookings([]);
+        }
+      } catch (error) {
+        console.error("Could not fetch bookings:", error);
         setBookings([]);
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-      // 2. Baaki Data laana (Bina Promise.all ke, taaki ek fail ho toh sab fail na hon)
-      const sRes = await fetch(`${API_BASE}/ShowSchedules`);
-      if (sRes.ok) setSchedules(await sRes.json());
+    fetchMyTickets();
+  }, [navigate]);
 
-      const mRes = await fetch(`${API_BASE}/Movies`);
-      if (mRes.ok) setMovies(await mRes.json());
-
-      const tRes = await fetch(`${API_BASE}/Theatres`);
-      if (tRes.ok) setTheatres(await tRes.json());
-
-      const cRes = await fetch(`${API_BASE}/Cities`);
-      if (cRes.ok) setCities(await cRes.json());
-
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      setBookings([]); // Error aaye toh khali list dikhao, crash mat karo
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) return <h3 style={{ textAlign: 'center', marginTop: '50px', color: '#2c3e50' }}>Loading your tickets... 🎟️</h3>;
+  if (isLoading) return <h2 style={{ textAlign: 'center', marginTop: '100px' }}>Loading your tickets... 🎟️</h2>;
 
   return (
-    <div style={styles.container}>
-      <h2 style={{ color: '#2c3e50', borderBottom: '2px solid #e74c3c', paddingBottom: '10px', display: 'inline-block' }}>
-        🎟️ My Tickets
-      </h2>
-
-      {bookings.length === 0 ? (
-        <div style={styles.emptyState}>
-          <h3>No bookings found!</h3>
-          <p>Looks like you haven't booked any movies yet.</p>
-          <button style={styles.btn} onClick={() => navigate('/')}>Book a Movie Now</button>
+    <div style={{ padding: '40px 20px', backgroundColor: '#f4f4f5', minHeight: '100vh' }}>
+      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        
+        {/* Updated Header with Flexbox to prevent overlap */}
+        <div style={{ marginBottom: '30px', borderBottom: '2px solid #bdc3c7', paddingBottom: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <h1 style={{ margin: 0, color: '#2c3e50', lineHeight: '1.2' }}>My Tickets</h1>
+          <p style={{ margin: 0, color: '#7f8c8d' }}>Manage your upcoming movie plans, {user?.name}</p>
         </div>
-      ) : (
-        <div style={styles.ticketGrid}>
-          {bookings.map((booking) => {
-            // Relational Data Jodna (Safe tarike se)
-            const schedule = schedules.find(s => s.id === booking.showId);
-            const movie = schedule ? movies.find(m => m.id === schedule.movieId) : null;
-            const theatre = schedule ? theatres.find(t => t.id === schedule.theatreId) : null;
-            const city = theatre ? cities.find(c => c.id === theatre.cityId) : null;
-            
-            return (
-              <div key={booking.id} style={styles.ticketCard}>
-                <div style={styles.ticketHeader}>
-                  <h3 style={{ margin: 0, color: 'white' }}>{movie ? movie.title : "Movie Details Unavailable"}</h3>
-                </div>
-                
-                <div style={styles.ticketBody}>
-                  <p><strong>📍 Location:</strong> {theatre ? theatre.name : "N/A"}, {city ? city.name : "N/A"}</p>
-                  <p><strong>📅 Date:</strong> {schedule ? new Date(schedule.showDate).toDateString() : "N/A"}</p>
-                  <p><strong>⏰ Time:</strong> {schedule ? new Date(schedule.showTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "N/A"}</p>
-                  <p><strong>💺 Seats:</strong> <span style={styles.highlight}>{booking.seatNumbers}</span></p>
+
+        {bookings.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {bookings.map((ticket, index) => (
+              <div key={index} style={styles.ticketCard}>
+                <div style={styles.ticketLeft}>
+                  <h2 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>{ticket.movieTitle}</h2>
+                  <p style={{ margin: '0 0 15px 0', color: '#7f8c8d', fontSize: '0.9rem' }}>{ticket.theatreName}</p>
                   
-                  <hr style={{ border: '1px dashed #bdc3c7', margin: '15px 0' }} />
-                  
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <p style={{ margin: 0, color: '#7f8c8d' }}>Total Paid:</p>
-                    <h2 style={{ margin: 0, color: '#27ae60' }}>₹{booking.totalAmount}</h2>
+                  <div style={{ display: 'flex', gap: '20px', marginBottom: '15px' }}>
+                    <div>
+                      <span style={styles.label}>DATE</span>
+                      <p style={styles.value}>{ticket.showDate}</p>
+                    </div>
+                    <div>
+                      <span style={styles.label}>TIME</span>
+                      <p style={styles.value}>{ticket.showTime}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <span style={styles.label}>SEATS ({ticket.seats.split(',').length})</span>
+                    <p style={styles.value}>{ticket.seats}</p>
                   </div>
                 </div>
+                
+                <div style={styles.ticketRight}>
+                  {/* Placeholder for the Proof-of-Watch QR Code */}
+                  <div style={styles.qrPlaceholder}>
+                     QR<br/>CODE
+                  </div>
+                  <span style={styles.bookingId}>ID: #{ticket.id || 'Pending'}</span>
+                  <span style={styles.statusBadge}>{ticket.status || 'CONFIRMED'}</span>
+                </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+            ))}
+          </div>
+        ) : (
+          <div style={styles.emptyState}>
+            <span style={{ fontSize: '4rem' }}>🍿</span>
+            <h2 style={{ color: '#2c3e50', marginTop: '15px' }}>No tickets found</h2>
+            <p style={{ color: '#7f8c8d', marginBottom: '20px' }}>You haven't booked any movies yet. Time to grab some popcorn!</p>
+            <button onClick={() => navigate('/')} style={styles.browseBtn}>Browse Movies</button>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 }
 
 const styles = {
-  container: { padding: '40px 5%', backgroundColor: '#f4f4f5', minHeight: '100vh', fontFamily: "'Segoe UI', Tahoma, sans-serif" },
-  emptyState: { textAlign: 'center', marginTop: '50px', color: '#7f8c8d' },
-  btn: { backgroundColor: '#e74c3c', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer', marginTop: '10px', fontWeight: 'bold' },
-  ticketGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px', marginTop: '30px' },
-  ticketCard: { backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 8px 16px rgba(0,0,0,0.1)' },
-  ticketHeader: { backgroundColor: '#2c3e50', padding: '15px 20px', borderBottom: '4px solid #e74c3c' },
-  ticketBody: { padding: '20px', color: '#34495e', lineHeight: '1.6' },
-  highlight: { backgroundColor: '#f1c40f', color: '#2c3e50', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold' }
+  ticketCard: { display: 'flex', backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 10px 20px rgba(0,0,0,0.08)', overflow: 'hidden', position: 'relative' },
+  ticketLeft: { flex: 1, padding: '25px', borderRight: '2px dashed #ecf0f1' },
+  ticketRight: { width: '180px', backgroundColor: '#fafafa', padding: '25px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '15px' },
+  
+  label: { display: 'block', fontSize: '0.75rem', color: '#95a5a6', fontWeight: 'bold', letterSpacing: '1px' },
+  value: { margin: '2px 0 0 0', color: '#2c3e50', fontSize: '1.1rem', fontWeight: 'bold' },
+  
+  qrPlaceholder: { width: '100px', height: '100px', backgroundColor: '#ecf0f1', border: '2px solid #bdc3c7', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#95a5a6', fontWeight: 'bold', textAlign: 'center', fontSize: '0.9rem' },
+  bookingId: { fontSize: '0.85rem', color: '#7f8c8d', fontWeight: 'bold' },
+  statusBadge: { backgroundColor: '#2ecc71', color: 'white', padding: '5px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 'bold', letterSpacing: '1px' },
+  
+  emptyState: { backgroundColor: 'white', padding: '50px 20px', borderRadius: '12px', textAlign: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' },
+  browseBtn: { padding: '12px 30px', backgroundColor: '#F84464', color: 'white', border: 'none', borderRadius: '6px', fontSize: '1.1rem', fontWeight: 'bold', cursor: 'pointer' }
 };
 
 export default MyBookings;
