@@ -20,7 +20,7 @@ public class TicketController {
     private TicketRepository ticketRepository;
     
     @Autowired
-    private ShowSeatRepository showSeatRepository; // Bring in the seat repository
+    private ShowSeatRepository showSeatRepository; 
 
     @PostMapping
     public ResponseEntity<Ticket> bookTicket(@RequestBody Ticket ticket) {
@@ -57,6 +57,7 @@ public class TicketController {
         return ResponseEntity.ok(userTickets);
     }
     
+    // Ensure this is the ONLY getShowTickets method in the file!
     @GetMapping("/show/{showId}")
     public ResponseEntity<List<Ticket>> getShowTickets(@PathVariable Long showId) {
         List<Ticket> showTickets = ticketRepository.findByShowScheduleId(showId);
