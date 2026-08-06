@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
+// Helper to dynamically load the Razorpay checkout script
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 function SeatSelection() {
   const { showId } = useParams();
   const navigate = useNavigate();
@@ -166,7 +177,7 @@ function SeatSelection() {
     return selectedSeats.reduce((total, seat) => total + seat.price, 0);
   };
 
-  const handleProceedToPayment = async () => {
+const handleProceedToPayment = async () => {
     if (selectedSeats.length === 0) {
       alert("Please select at least one seat to proceed.");
       return;
@@ -177,35 +188,81 @@ function SeatSelection() {
       return;
     }
 
-    const ticketPayload = {
-      userEmail: loggedInUser.email,
-      showScheduleId: parseInt(showId),
-      movieTitle: movie.title,
-      theatreName: theatre.name,
-      showDate: schedule.showDate,
-      showTime: schedule.showTime.split('T')[1].substring(0, 5),
-      seats: selectedSeats.map(s => s.id).join(', '), 
-      totalAmount: calculateTotal(),
-      status: "CONFIRMED" 
-    };
+    const totalAmount = calculateTotal();
 
     try {
-      const response = await fetch(`${API_BASE}/Bookings`, {
+      // 1. Load the Razorpay Script
+      const res = await loadRazorpayScript();
+      if (!res) {
+        alert("Failed to load Razorpay SDK. Check your internet connection.");
+        return;
+      }
+
+      // 2. Ask Java to create a Razorpay Order
+      const orderResponse = await fetch(`${API_BASE}/payment/create-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(ticketPayload)
+        body: JSON.stringify({ amount: totalAmount })
       });
+      const orderData = await orderResponse.json();
 
-      if (response.ok) {
-        alert(`Payment of ₹${calculateTotal()} successful! Generating tickets...`);
-        navigate('/my-tickets');
-      } else {
-        const errorMsg = await response.text();
-        alert(`Booking failed: ${errorMsg}`);
-      }
+      // 3. Configure the Razorpay Popup
+      const options = {
+        key: "rzp_test_TMVnVixTkdMS28", // ⚠️ PASTE YOUR KEY_ID HERE AS WELL
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "Smart Ticketing System",
+        description: `${movie.title} - ${selectedSeats.length} Tickets`,
+        order_id: orderData.id,
+        handler: async function (response) {
+          // 4. THIS RUNS ONLY IF PAYMENT IS SUCCESSFUL!
+          alert(`Payment Successful! Payment ID: ${response.razorpay_payment_id}`);
+          
+          // Now save the actual ticket to the database
+          const ticketPayload = {
+            userEmail: loggedInUser.email,
+            showScheduleId: parseInt(showId),
+            movieTitle: movie.title,
+            theatreName: theatre.name,
+            showDate: schedule.showDate,
+            showTime: schedule.showTime.split('T')[1].substring(0, 5),
+            seats: selectedSeats.map(s => s.id).join(', '), 
+            totalAmount: totalAmount,
+            status: "CONFIRMED" 
+          };
+
+          try {
+            const bookingResponse = await fetch(`${API_BASE}/Bookings`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(ticketPayload)
+            });
+
+            if (bookingResponse.ok) {
+              navigate('/my-tickets');
+            } else {
+              alert("Payment captured, but ticket generation failed. Contact support.");
+            }
+          } catch (error) {
+            console.error("Booking error:", error);
+          }
+        },
+        prefill: {
+          name: loggedInUser.name,
+          email: loggedInUser.email,
+        },
+        theme: {
+          color: "#F84464" // BookMyShow Pink!
+        }
+      };
+
+      // Open the payment popup
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.open();
+
     } catch (error) {
-      console.error("Booking error:", error);
-      alert("Server connection failed.");
+      console.error("Payment initialization error:", error);
+      alert("Could not initialize payment gateway.");
     }
   };
 
