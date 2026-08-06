@@ -21,6 +21,9 @@ public class User {
 
     private String password;
 
+    @Column(nullable = false, unique = true)
+    private String phone;
+
     // Default role
     private String role = "CUSTOMER"; 
 }

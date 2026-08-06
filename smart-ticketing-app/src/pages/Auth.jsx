@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 function Auth() {
   const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+  const [formData, setFormData] = useState({ name: '', email: '', password: '', phone: '' });
   const [errorMsg, setErrorMsg] = useState('');
 
   const API_BASE = "http://localhost:8080/api/Auth";
@@ -72,8 +72,25 @@ function Auth() {
 
         <form onSubmit={handleSubmit} style={styles.form}>
           {!isLogin && (
-            <input type="text" name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required style={styles.input} />
-          )}
+        <input type="text" name="name" placeholder="Full Name" value={formData.name} onChange={handleChange} required style={styles.input} />
+        )}
+          {!isLogin && (
+        <input
+        type="tel"
+        name="phone"
+        placeholder="10-digit Phone Number"
+        value={formData.phone}
+          onChange={(e) => {
+        const digitsOnly = e.target.value.replace(/\D/g, '').slice(0, 10);
+        setFormData({ ...formData, phone: digitsOnly });
+        }}
+        required
+        pattern="\d{10}"
+        title="Enter exactly 10 digits"
+        maxLength={10}
+        style={styles.input}
+        />
+        )}
           <input type="email" name="email" placeholder="Email Address" value={formData.email} onChange={handleChange} required style={styles.input} />
           <input type="password" name="password" placeholder="Password" value={formData.password} onChange={handleChange} required style={styles.input} />
           

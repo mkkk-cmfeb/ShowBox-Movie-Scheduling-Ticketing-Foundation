@@ -38,6 +38,14 @@ public class AuthController {
         return ResponseEntity.badRequest().body(Map.of("message", "Email already exists!"));
     }
 
+    if (user.getPhone() == null || !user.getPhone().matches("\\d{10}")) {
+        return ResponseEntity.badRequest().body(Map.of("message", "Invalid number! Number should be 10 digits long!"));
+    }
+
+    if (userRepository.existsByPhone(user.getPhone())) {
+        return ResponseEntity.badRequest().body(Map.of("message", "Phone number already registered!"));
+    }
+
         if(userRepository.count() == 0) {
             user.setRole("ADMIN");
         }
