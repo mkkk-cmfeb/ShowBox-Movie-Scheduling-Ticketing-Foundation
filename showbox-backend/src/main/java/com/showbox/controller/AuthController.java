@@ -30,10 +30,13 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
-        if (userRepository.existsByEmail(user.getEmail())) {
-            // 🛠️ NAYA: Error ko JSON format mein bhejna
-            return ResponseEntity.badRequest().body(Map.of("message", "Email already exists!"));
-        }
+    if (user.getEmail() == null || !user.getEmail().matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+        return ResponseEntity.badRequest().body(Map.of("message", "Please enter a valid email address!"));
+    }
+
+    if (userRepository.existsByEmail(user.getEmail())) {
+        return ResponseEntity.badRequest().body(Map.of("message", "Email already exists!"));
+    }
 
         if(userRepository.count() == 0) {
             user.setRole("ADMIN");
