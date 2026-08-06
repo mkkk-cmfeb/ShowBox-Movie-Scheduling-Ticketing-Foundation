@@ -44,6 +44,12 @@
     		<groupId>org.springframework.boot</groupId>
     		<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
+
+		<!-- Password hashing (BCrypt) - lightweight, no full Spring Security framework -->
+		<dependency>
+    		<groupId>org.springframework.security</groupId>
+    		<artifactId>spring-security-crypto</artifactId>
+		</dependency>
 		
 		<!-- MySQL Connector -->
 		<dependency>

@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import com.showbox.model.User;
 import com.showbox.repository.UserRepository;
@@ -25,6 +26,7 @@ public class AuthController {
     @Autowired
     private UserRepository userRepository;
 
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
     private final String SECRET = "MySuperSecretKeyForShowboxProjectWhichMustBeVeryLong2026";
     private final SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes());
 
@@ -50,6 +52,7 @@ public class AuthController {
             user.setRole("ADMIN");
         }
 
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
         return ResponseEntity.ok(Map.of("message", "User registered successfully!"));
     }
@@ -61,7 +64,7 @@ public class AuthController {
         if (userOptional.isPresent()) {
             User user = userOptional.get();
             
-            if (loginRequest.getPassword().equals(user.getPassword())) {
+            if (passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
                 
                 String jwtToken = Jwts.builder()
                         .subject(user.getEmail())
