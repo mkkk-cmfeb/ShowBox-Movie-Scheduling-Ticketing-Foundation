@@ -9,6 +9,7 @@ import AdminDashboard from './pages/AdminDashboard.jsx';
 import BookTicket from './pages/BookTicket.jsx';
 import SeatSelection from './pages/SeatSelection.jsx';
 import MyBookings from './pages/MyBookings.jsx'; // 👈 Ye import missing hoga!
+import MyTickets from './pages/MyTickets.jsx';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="/auth" element={<Auth />} />
         <Route path="/book/:id" element={<BookTicket />} /> 
         <Route path="/seats/:showId" element={<SeatSelection />} />
+        <Route path="/my-tickets-qr" element={<MyTickets />} />
         
         {/* User Routes */}
         <Route path="/my-tickets" element={<MyBookings />} />

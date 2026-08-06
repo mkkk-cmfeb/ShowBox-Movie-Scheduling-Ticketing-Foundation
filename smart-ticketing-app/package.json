@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "preact": "^10.29.2",
+    "react-qr-code": "^2.2.0",
     "react-router-dom": "^7.18.0"
   },
   "devDependencies": {
