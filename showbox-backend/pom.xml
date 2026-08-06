@@ -39,6 +39,12 @@
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
 		
+		<!-- Email sending -->
+		<dependency>
+    		<groupId>org.springframework.boot</groupId>
+    		<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+		
 		<!-- MySQL Connector -->
 		<dependency>
 			<groupId>com.mysql</groupId>
