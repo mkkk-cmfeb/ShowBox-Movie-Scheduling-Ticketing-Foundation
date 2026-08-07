@@ -7,9 +7,15 @@ qrcode.stringToBytes = (s) => Array.from(new TextEncoder().encode(s));
 function QRCode({ value, size = 128, level = 'L', bgColor = '#FFFFFF', fgColor = '#000000', title, ...props }) {
   if (!value) return null;
 
-  const qr = qrcode(0, level);
-  qr.addData(value);
-  qr.make();
+  let qr;
+  try {
+    qr = qrcode(0, level);
+    qr.addData(value);
+    qr.make();
+  } catch (error) {
+    console.warn('QR generation failed:', error);
+    return null;
+  }
 
   const moduleCount = qr.getModuleCount();
   let fgPath = '';

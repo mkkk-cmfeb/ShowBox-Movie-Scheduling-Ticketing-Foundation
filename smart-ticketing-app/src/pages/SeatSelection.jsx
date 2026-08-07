@@ -392,4 +392,4 @@ const styles = {
   timerBadge: { backgroundColor: '#e74c3c', color: 'white', padding: '3px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold', letterSpacing: '1px' }
 };
 
-export default SeatSelection;
+export default SeatSelection; //default value

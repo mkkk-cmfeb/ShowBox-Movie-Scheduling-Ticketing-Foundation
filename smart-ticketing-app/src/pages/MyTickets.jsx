@@ -11,10 +11,10 @@ function MyTickets() {
   const navigate = useNavigate();
 
   const API_BASE = "http://localhost:8080/api";
-  const userStr = localStorage.getItem("user");
-  const loggedInUser = userStr ? JSON.parse(userStr) : null;
 
   useEffect(() => {
+    const userStr = localStorage.getItem("user");
+    const loggedInUser = userStr ? JSON.parse(userStr) : null;
     if (!loggedInUser || !loggedInUser.email) {
       navigate('/auth');
       return;
@@ -43,7 +43,7 @@ function MyTickets() {
     };
 
     fetchAll();
-  }, [loggedInUser, navigate]);
+  }, [navigate]);
 
   if (isLoading) return <h2 style={{ textAlign: 'center', marginTop: '100px' }}>Loading your tickets...</h2>;
 

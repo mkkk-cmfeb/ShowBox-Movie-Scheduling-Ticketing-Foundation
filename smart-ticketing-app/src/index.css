@@ -34,3 +34,14 @@ input,
 select {
   font-family: var(--sans);
 }
+
+@media (max-width: 768px) {
+  .hero-poster {
+    display: none;
+  }
+  .hero-content {
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding-right: 6% !important;
+  }
+}

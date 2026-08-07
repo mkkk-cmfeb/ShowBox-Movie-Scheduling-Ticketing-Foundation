@@ -17,8 +17,15 @@ function MyBookings() {
       navigate('/auth');
       return;
     }
-    
-    const loggedInUser = JSON.parse(userStr);
+
+    let loggedInUser;
+    try {
+      loggedInUser = JSON.parse(userStr);
+    } catch (error) {
+      localStorage.removeItem("user");
+      navigate('/auth');
+      return;
+    }
     setUser(loggedInUser);
 
     // 2. Fetch User's Tickets from Spring Boot
