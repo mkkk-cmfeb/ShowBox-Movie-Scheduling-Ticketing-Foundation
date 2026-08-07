@@ -7,6 +7,7 @@ import com.showbox.repository.TicketRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.showbox.service.TicketEmailService;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +22,9 @@ public class TicketController {
     
     @Autowired
     private ShowSeatRepository showSeatRepository; 
+
+    @Autowired
+    private TicketEmailService ticketEmailService;
 
     @PostMapping
     public ResponseEntity<Ticket> bookTicket(@RequestBody Ticket ticket) {
@@ -47,6 +51,9 @@ public class TicketController {
                 }
             }
         }
+
+        // Fire off the confirmation email (runs async, won't slow down this response)
+        ticketEmailService.sendTicketConfirmation(savedTicket);
         
         return ResponseEntity.ok(savedTicket);
     }
