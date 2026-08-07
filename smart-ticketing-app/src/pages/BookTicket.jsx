@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import MoviePoster from '../components/MoviePoster.jsx';
 
 function BookTicket() {
   const { id } = useParams(); 
@@ -33,6 +34,7 @@ function BookTicket() {
       const mm = String(nextDate.getMonth() + 1).padStart(2, '0');
       const dd = String(nextDate.getDate()).padStart(2, '0');
       const fullDate = `${yyyy}-${mm}-${dd}`;
+
 
       // UI Text Formatting (e.g., "WED", "05", "AUG")
       const dayName = nextDate.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
@@ -105,11 +107,11 @@ function BookTicket() {
 
   const selectedTheatreDetails = theatres.find(t => t.id.toString() === selectedTheatre);
 
-  if (isLoading) return <h2 style={{ textAlign: 'center', marginTop: '100px' }}>Loading... ⏳</h2>;
+  if (isLoading) return <h2 style={{ textAlign: 'center', marginTop: '100px' }}>Loading...</h2>;
   if (!movie) return <h2 style={{ textAlign: 'center', marginTop: '100px', color: 'red' }}>Movie not found!</h2>;
 
   return (
-    <div style={{ padding: '20px', backgroundColor: '#f4f4f5', minHeight: '100vh' }}>
+    <div style={{ padding: '30px 20px', backgroundColor: '#f4f4f5', minHeight: '100vh' }}>
       
       {/* Invisible style block to hide the scrollbar for the date container */}
       <style>
@@ -123,8 +125,11 @@ function BookTicket() {
         
         {/* Movie Header */}
         <div style={styles.headerCard}>
-          <h1 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>{movie.title}</h1>
-          <p style={{ margin: '0', color: '#7f8c8d', fontSize: '1rem' }}>{movie.genre}</p>
+          <MoviePoster title={movie.title} style={styles.headerPoster} />
+          <div>
+            <h1 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>{movie.title}</h1>
+            <p style={{ margin: '0', color: '#7f8c8d', fontSize: '1rem' }}>{movie.genre}</p>
+          </div>
         </div>
 
         {/* BMS Style Date Calendar */}
@@ -164,11 +169,11 @@ function BookTicket() {
             {cities.map(city => <option key={city.id} value={city.id.toString()}>{city.name}</option>)}
           </select>
 
-          <select 
-            value={selectedTheatre} 
-            onChange={(e) => setSelectedTheatre(e.target.value)} 
+          <select
+            value={selectedTheatre}
+            onChange={(e) => setSelectedTheatre(e.target.value)}
             style={{ ...styles.selectInput, backgroundColor: selectedCity ? 'white' : '#ecf0f1' }}
-            disabled={!selectedCity} // Remains locked until a City is selected
+            disabled={!selectedCity}
           >
             <option value="" disabled>-- Select a Theatre --</option>
             {availableTheatresInCity.map(theatre => (
@@ -208,10 +213,11 @@ function BookTicket() {
 }
 
 const styles = {
-  headerCard: { backgroundColor: 'white', padding: '30px', borderRadius: '10px 10px 0 0', textAlign: 'center', borderBottom: '1px solid #eee', display: 'flex', flexDirection: 'column', gap: '8px' },
+  headerCard: { backgroundColor: 'white', padding: '24px 30px', borderRadius: '12px 12px 0 0', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '25px' },
+  headerPoster: { width: '90px', height: '135px', backgroundSize: 'cover', backgroundPosition: 'center', borderRadius: '8px', boxShadow: '0 6px 14px rgba(0,0,0,0.2)', flexShrink: 0 },
   
   // Date Calendar Styles
-  dateCalendarWrapper: { backgroundColor: 'white', padding: '15px 20px', borderRadius: '0 0 10px 10px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '25px' },
+  dateCalendarWrapper: { backgroundColor: 'white', padding: '15px 20px', borderRadius: '0 0 12px 12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '25px' },
   dateContainer: { display: 'flex', gap: '15px', overflowX: 'auto', padding: '5px 0' },
   
   activeDateBtn: { backgroundColor: '#F84464', border: 'none', borderRadius: '8px', padding: '10px 15px', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', minWidth: '65px', boxShadow: '0 4px 8px rgba(248,68,100,0.3)' },
@@ -227,7 +233,7 @@ const styles = {
   selectInput: { padding: '14px', borderRadius: '8px', border: '1px solid #dcdde1', fontSize: '1rem', flex: 1, minWidth: '250px', backgroundColor: 'white', outline: 'none', color: '#2c3e50', cursor: 'pointer' },
   
   // Theatre & Shows
-  theatreCard: { backgroundColor: 'white', padding: '25px', borderRadius: '10px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' },
+  theatreCard: { backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' },
   timeButton: { padding: '10px 25px', backgroundColor: '#fff', color: '#27ae60', border: '2px solid #27ae60', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.1rem', transition: 'all 0.2s' },
   noShowsText: { color: '#e74c3c', backgroundColor: '#fdf3f2', padding: '15px', borderRadius: '6px', display: 'inline-block', fontSize: '0.95rem' }
 };

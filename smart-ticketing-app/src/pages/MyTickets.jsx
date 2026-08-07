@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import QRCode from 'react-qr-code';
+import QRCode from '../components/QRCode.jsx';
 
 function MyTickets() {
   const [bookings, setBookings] = useState([]);
@@ -45,7 +45,7 @@ function MyTickets() {
     fetchAll();
   }, [loggedInUser, navigate]);
 
-  if (isLoading) return <h2 style={{ textAlign: 'center', marginTop: '100px' }}>Loading your tickets... 🎟️</h2>;
+  if (isLoading) return <h2 style={{ textAlign: 'center', marginTop: '100px' }}>Loading your tickets...</h2>;
 
   return (
     <div style={{ backgroundColor: '#f4f4f5', minHeight: '100vh', padding: '40px 20px' }}>
@@ -59,18 +59,18 @@ function MyTickets() {
           </div>
         ) : (
           bookings.map((booking) => {
-            // Join related data, same approach as MyBookings.jsx
-            const schedule = schedules.find(s => s.id === booking.showId);
+            // Join related data from the show schedule (Ticket stores showScheduleId)
+            const schedule = schedules.find(s => s.id === booking.showScheduleId);
             const movie = schedule ? movies.find(m => m.id === schedule.movieId) : null;
             const theatre = schedule ? theatres.find(t => t.id === schedule.theatreId) : null;
 
-            const movieTitle = movie ? movie.title : "Movie Details Unavailable";
-            const theatreName = theatre ? theatre.name : "N/A";
-            const showDate = schedule ? new Date(schedule.showDate).toDateString() : "N/A";
-            const showTime = schedule
+            const movieTitle = movie ? movie.title : (booking.movieTitle || "Movie Details Unavailable");
+            const theatreName = theatre ? theatre.name : (booking.theatreName || "N/A");
+            const showDate = booking.showDate || (schedule ? new Date(schedule.showDate).toDateString() : "N/A");
+            const showTime = booking.showTime || (schedule
               ? new Date(schedule.showTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-              : "N/A";
-            const seats = booking.seatNumbers || "N/A";
+              : "N/A");
+            const seats = booking.seats || "N/A";
 
             // Data embedded inside the QR Code
             const qrData = JSON.stringify({
@@ -104,7 +104,6 @@ function MyTickets() {
                     <span style={styles.label}>SEATS ({seats.split(',').filter(Boolean).length})</span>
                     <p style={{ ...styles.value, fontSize: '1.2rem', color: '#e74c3c' }}>{seats}</p>
                   </div>
-
                   <div style={{ marginTop: '20px' }}>
                     <span style={styles.label}>TOTAL AMOUNT</span>
                     <p style={styles.value}>₹ {booking.totalAmount}</p>
@@ -134,12 +133,12 @@ function MyTickets() {
 }
 
 const styles = {
-  ticketCard: { display: 'flex', backgroundColor: 'white', borderRadius: '15px', overflow: 'hidden', marginBottom: '25px', boxShadow: '0 10px 20px rgba(0,0,0,0.05)', flexWrap: 'wrap' },
+  ticketCard: { display: 'flex', backgroundColor: 'white', borderRadius: '12px', overflow: 'hidden', marginBottom: '25px', boxShadow: '0 10px 20px rgba(0,0,0,0.05)', flexWrap: 'wrap' },
   ticketDetails: { flex: '1', padding: '30px', minWidth: '300px' },
   qrSection: { width: '250px', backgroundColor: '#fafafa', padding: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderLeft: '2px dashed #ecf0f1' },
   label: { fontSize: '0.75rem', color: '#95a5a6', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase' },
   value: { fontSize: '1.1rem', color: '#2c3e50', fontWeight: 'bold', margin: '5px 0 0 0' },
-  browseBtn: { marginTop: '20px', padding: '10px 25px', backgroundColor: '#F84464', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }
+  browseBtn: { marginTop: '20px', padding: '10px 25px', backgroundColor: '#F84464', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }
 };
 
 export default MyTickets;
