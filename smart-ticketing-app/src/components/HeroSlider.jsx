@@ -23,10 +23,11 @@ function HeroSlide({ movie, onBook }) {
           alt={movie?.title || 'Movie poster'}
           onError={() => setFailed(true)}
           style={styles.slideImg}
+          className="hero-poster"
         />
       )}
       <div style={styles.slideOverlay} />
-      <div style={styles.heroContent}>
+      <div style={styles.heroContent} className="hero-content">
         <span style={styles.premierTag}>PREMIERE</span>
         <h1 style={styles.title}>{movie?.title}</h1>
         {movie?.genre && (

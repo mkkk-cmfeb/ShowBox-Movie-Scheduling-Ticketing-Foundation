@@ -2,13 +2,20 @@ import { Link, useNavigate } from 'react-router-dom';
 
 function Navbar() {
   const navigate = useNavigate();
-  const userString = localStorage.getItem("user");
-  const user = userString ? JSON.parse(userString) : null;
+  let user = null;
+  try {
+    const userString = localStorage.getItem("user");
+    user = userString ? JSON.parse(userString) : null;
+  } catch (error) {
+    localStorage.removeItem("user");
+  }
 
   const handleLogout = () => {
     localStorage.removeItem("user");
     navigate("/");
   };
+
+  const userName = user && user.name ? user.name.split(' ')[0] : null;
 
   return (
     <nav style={styles.nav}>
@@ -26,9 +33,9 @@ function Navbar() {
             <Link to="/my-tickets" style={styles.link}>My Tickets</Link>
             <div style={styles.userInfo}>
               <div style={styles.avatar}>
-                {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                {userName ? userName.charAt(0).toUpperCase() : 'U'}
               </div>
-              <span style={styles.userName}>{user.name.split(' ')[0]}</span>
+              <span style={styles.userName}>{userName || 'Guest'}</span>
             </div>
             <button onClick={handleLogout} style={styles.logoutButton}>
               Logout

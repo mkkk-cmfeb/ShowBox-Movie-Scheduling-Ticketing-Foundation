@@ -189,9 +189,9 @@ function AdminDashboard() {
       showNumber: parseInt(scheduleData.showNumber),
       showTime: `${scheduleData.showDate}T${safeStartTime}:00`,
       endTime: `${scheduleData.showDate}T${safeEndTime}:00`,
-      premiumPrice: parseFloat(scheduleData.premiumPrice),
-      executivePrice: parseFloat(scheduleData.executivePrice),
-      normalPrice: parseFloat(scheduleData.normalPrice)
+      premiumPrice: parseInt(scheduleData.premiumPrice),
+      executivePrice: parseInt(scheduleData.executivePrice),
+      normalPrice: parseInt(scheduleData.normalPrice)
     };
 
     try {
