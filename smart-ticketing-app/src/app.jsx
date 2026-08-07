@@ -10,6 +10,7 @@ import BookTicket from './pages/BookTicket.jsx';
 import SeatSelection from './pages/SeatSelection.jsx';
 import MyBookings from './pages/MyBookings.jsx';
 import MyTickets from './pages/MyTickets.jsx';
+import Crowdfunding from './pages/Crowdfunding';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
         <Route path="/book/:id" element={<BookTicket />} /> 
         <Route path="/seats/:showId" element={<SeatSelection />} />
         <Route path="/my-tickets-qr" element={<MyTickets />} />
+        <Route path="/crowdfunding" element={<Crowdfunding />} />
         
         {/* User Routes */}
         <Route path="/my-tickets" element={<MyBookings />} />

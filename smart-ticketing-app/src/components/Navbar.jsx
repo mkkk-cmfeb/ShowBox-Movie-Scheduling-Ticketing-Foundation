@@ -39,6 +39,7 @@ function Navbar() {
             Sign In / Register
           </Link>
         )}
+        <Link to="/crowdfunding" style={styles.link}>Crowdfunding</Link>
       </div>
     </nav>
   );

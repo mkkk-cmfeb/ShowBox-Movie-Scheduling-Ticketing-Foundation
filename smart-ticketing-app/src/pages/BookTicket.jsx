@@ -35,8 +35,7 @@ function BookTicket() {
       const dd = String(nextDate.getDate()).padStart(2, '0');
       const fullDate = `${yyyy}-${mm}-${dd}`;
 
-
-      // UI Text Formatting (e.g., "WED", "05", "AUG")
+      // UI Text Formatting
       const dayName = nextDate.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
       const dayNum = nextDate.toLocaleDateString('en-US', { day: '2-digit' });
       const monthName = nextDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
@@ -48,29 +47,25 @@ function BookTicket() {
 
   const next7Days = generateNext7Days();
 
+  // 1. Fetch Movies, Cities, and Schedules on component load
   useEffect(() => {
-    // Default to today's date
     setSelectedDate(next7Days[0].fullDate);
 
     const fetchBookingData = async () => {
       try {
-        const [moviesRes, schedulesRes, theatresRes, citiesRes] = await Promise.all([
+        const [moviesRes, schedulesRes, citiesRes] = await Promise.all([
           fetch(`${API_BASE}/Movies`),
           fetch(`${API_BASE}/ShowSchedules`),
-          fetch(`${API_BASE}/Theatres`),
           fetch(`${API_BASE}/Cities`)
         ]);
 
-        if (moviesRes.ok && schedulesRes.ok && theatresRes.ok && citiesRes.ok) {
+        if (moviesRes.ok && schedulesRes.ok && citiesRes.ok) {
           const allMovies = await moviesRes.json();
           const allSchedules = await schedulesRes.json();
-          const allTheatres = await theatresRes.json();
           const allCities = await citiesRes.json();
 
           const currentMovie = allMovies.find(m => m.id.toString() === id.toString());
           setMovie(currentMovie || null);
-
-          setTheatres(allTheatres);
           setCities(allCities);
 
           if (currentMovie) {
@@ -85,7 +80,28 @@ function BookTicket() {
     };
 
     fetchBookingData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // 2. Fetch Theatres dynamically ONLY when a City is selected
+  useEffect(() => {
+    if (!selectedCity) {
+      setTheatres([]); // Clear theatres if no city is selected
+      return;
+    }
+
+    const fetchTheatresByCity = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/Theatres/city/${selectedCity}`);
+        if (response.ok) {
+          setTheatres(await response.json());
+        }
+      } catch (error) {
+        console.error("Failed to fetch theatres", error);
+      }
+    };
+    fetchTheatresByCity();
+  }, [selectedCity]);
 
   // Dropdown Handlers
   const handleCityChange = (e) => {
@@ -97,8 +113,8 @@ function BookTicket() {
     navigate(`/seats/${scheduleId}`);
   };
 
-  // Filter the dropdown options based on selections
-  const availableTheatresInCity = theatres.filter(t => t.cityId.toString() === selectedCity);
+  // Theatres are now inherently filtered by the backend
+  const availableTheatresInCity = theatres;
   
   const finalSchedules = schedules.filter(s => 
     s.showDate === selectedDate && 
@@ -191,7 +207,12 @@ function BookTicket() {
             {finalSchedules.length > 0 ? (
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                 {finalSchedules.map(show => {
-                  const timeString = show.showTime.split('T')[1].substring(0, 5); 
+                  
+                  // Safely extracts the time regardless of if it's formatted as a Date-Time or just Time
+                  const timeString = show.showTime.includes('T') 
+                    ? show.showTime.split('T')[1].substring(0, 5) 
+                    : show.showTime.substring(0, 5);
+                    
                   return (
                     <button key={show.id} onClick={() => handleTimeClick(show.id)} style={styles.timeButton}>
                       {timeString}

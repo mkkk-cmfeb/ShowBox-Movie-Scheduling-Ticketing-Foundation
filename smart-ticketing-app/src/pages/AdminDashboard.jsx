@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MoviePoster from '../components/MoviePoster.jsx';
+import ManageCampaigns from '../components/ManageCampaigns';
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -228,6 +229,8 @@ function AdminDashboard() {
           <button onClick={() => setActiveTab('cities')} style={activeTab === 'cities' ? styles.activeTab : styles.inactiveTab}>Manage Cities</button>
           <button onClick={() => setActiveTab('theatres')} style={activeTab === 'theatres' ? styles.activeTab : styles.inactiveTab}>Manage Theatres</button>
           <button onClick={() => setActiveTab('schedules')} style={activeTab === 'schedules' ? styles.activeTab : styles.inactiveTab}>Manage Schedules</button>
+          <button onClick={() => setActiveTab('campaigns')} style={activeTab === 'campaigns' ? styles.activeTab : styles.inactiveTab}>Manage Campaigns</button>
+          {activeTab === 'campaigns' && <ManageCampaigns />}
         </div>
 
         {activeTab === 'movies' && (
