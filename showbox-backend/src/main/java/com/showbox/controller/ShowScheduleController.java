@@ -24,7 +24,7 @@ public class ShowScheduleController {
     public ResponseEntity<?> addSchedule(@RequestBody ShowSchedule schedule) {
         // Validation: No Overlap Rule
         if (showScheduleRepository.hasTimeConflict(schedule.getTheatreId(), schedule.getShowTime(), schedule.getEndTime())) {
-            return ResponseEntity.badRequest().body("Clash Error! Is theatre mein is time par pehle se ek show chal raha hai.");
+            return ResponseEntity.badRequest().body("Clash Error! Movie is already running in this theatre.");
         }
         return ResponseEntity.ok(showScheduleRepository.save(schedule));
     }

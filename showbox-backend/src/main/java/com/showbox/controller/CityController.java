@@ -24,7 +24,7 @@ public class CityController {
     public ResponseEntity<?> addCity(@RequestBody City city) {
         // Validation: Duplicate city check
         if (cityRepository.existsByNameIgnoreCase(city.getName())) {
-            return ResponseEntity.badRequest().body("Ye City pehle se database mein add hai!");
+            return ResponseEntity.badRequest().body("City already exists in list");
         }
         return ResponseEntity.ok(cityRepository.save(city));
     }
