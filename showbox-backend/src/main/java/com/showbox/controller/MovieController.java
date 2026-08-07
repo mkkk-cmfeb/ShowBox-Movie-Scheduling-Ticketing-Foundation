@@ -40,4 +40,14 @@ public class MovieController {
         movieRepository.save(movie);
         return ResponseEntity.ok(movie);
     }
+
+    // 4. Movie delete karne ke liye
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteMovie(@PathVariable Long id) {
+        if (!movieRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        movieRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
 }

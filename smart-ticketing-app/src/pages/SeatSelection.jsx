@@ -56,7 +56,7 @@ function SeatSelection() {
               const tickets = await ticketsRes.json();
               tickets.forEach(ticket => {
                   if(ticket.seats) {
-                      const seats = ticket.seats.split(',').map(s => s.trim());
+                      const seats = ticket.seats.split(',').map(s => s.trim()).filter(Boolean);
                       unavailableSeats = [...unavailableSeats, ...seats];
                   }
               });
@@ -162,8 +162,8 @@ function SeatSelection() {
           // Success! Java locked it for us. Turn it green.
           setSelectedSeats(prev => [...prev, { id: seatId, price }]);
         } else {
-          // Failure (409 Conflict). Someone else clicked it a millisecond before us!
-          alert("⚠️ Sorry, this seat was just taken by another user! Please choose another.");
+          // Alert other users politely
+          alert("Sorry, this seat was just taken by another user. Please choose another.");
           setBookedSeats(prev => [...prev, seatId]); // Instantly turn it gray
         }
       } catch (e) {
@@ -208,7 +208,7 @@ const handleProceedToPayment = async () => {
 
       // 3. Configure the Razorpay Popup
       const options = {
-        key: "rzp_test_TMVnVixTkdMS28", // ⚠️ PASTE YOUR KEY_ID HERE AS WELL
+        key: "rzp_test_TMVnVixTkdMS28", // PASTE YOUR KEY_ID HERE
         amount: orderData.amount,
         currency: orderData.currency,
         name: "Smart Ticketing System",
@@ -239,7 +239,7 @@ const handleProceedToPayment = async () => {
             });
 
             if (bookingResponse.ok) {
-              navigate('/my-tickets');
+              navigate('/my-tickets-qr');
             } else {
               alert("Payment captured, but ticket generation failed. Contact support.");
             }
@@ -272,7 +272,7 @@ const handleProceedToPayment = async () => {
     return `${m}:${s}`;
   };
 
-  if (isLoading) return <h2 style={{ textAlign: 'center', marginTop: '100px' }}>Mapping Seats... 🎬</h2>;
+  if (isLoading) return <h2 style={{ textAlign: 'center', marginTop: '100px' }}>Loading seat map...</h2>;
   if (!schedule) return <h2 style={{ textAlign: 'center', marginTop: '100px', color: 'red' }}>Show not found!</h2>;
 
   const displayTime = schedule.showTime.split('T')[1].substring(0, 5);
@@ -283,7 +283,7 @@ const handleProceedToPayment = async () => {
       <div style={styles.headerBar}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h2 style={{ margin: '0 0 5px 0', color: '#2c3e50' }}>{movie?.title}</h2>
+            <h2 style={{ margin: '0 0 5px 0', color: '#2c3e50', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '70vw' }}>{movie?.title}</h2>
             <p style={{ margin: 0, color: '#7f8c8d', fontSize: '0.9rem' }}>
               {theatre?.name} | {schedule.showDate} | {displayTime}
             </p>
@@ -292,7 +292,7 @@ const handleProceedToPayment = async () => {
         </div>
       </div>
 
-      <div style={{ maxWidth: '1000px', margin: '30px auto', padding: '0 20px' }}>
+      <div style={{ maxWidth: '1000px', margin: '40px auto', padding: '0 20px' }}>
         
         <div style={styles.screenContainer}>
           <div style={styles.screen}></div>
@@ -355,7 +355,7 @@ const handleProceedToPayment = async () => {
                   {selectedSeats.map(s => s.id).join(', ')}
                 </p>
                 <span style={styles.timerBadge}>
-                  ⏳ {formatTime(timeLeft)}
+                  {formatTime(timeLeft)}
                 </span>
               </div>
             </div>
@@ -376,10 +376,10 @@ const handleProceedToPayment = async () => {
 const styles = {
   headerBar: { backgroundColor: 'white', padding: '15px 20px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', position: 'sticky', top: 0, zIndex: 10 },
   backBtn: { padding: '8px 15px', border: '1px solid #e74c3c', color: '#e74c3c', backgroundColor: 'transparent', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' },
-  screenContainer: { textAlign: 'center', marginBottom: '50px', marginTop: '20px' },
+  screenContainer: { textAlign: 'center', marginBottom: '40px', marginTop: '10px' },
   screen: { height: '5px', backgroundColor: '#bdc3c7', borderRadius: '50%', boxShadow: '0 15px 20px rgba(0,0,0,0.1)', transform: 'rotateX(-45deg)' },
   screenText: { color: '#95a5a6', fontSize: '0.8rem', marginTop: '10px', textTransform: 'uppercase', letterSpacing: '2px' },
-  seatGrid: { display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: 'white', padding: '30px', borderRadius: '10px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', overflowX: 'auto' },
+  seatGrid: { display: 'flex', flexDirection: 'column', alignItems: 'center', backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', overflowX: 'auto' },
   categoryHeader: { display: 'flex', justifyContent: 'space-between', color: '#7f8c8d', fontSize: '0.9rem', fontWeight: 'bold', textTransform: 'uppercase' },
   row: { display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px', gap: '15px', minWidth: 'max-content' },
   rowLabel: { width: '20px', color: '#95a5a6', fontWeight: 'bold', textAlign: 'center' },

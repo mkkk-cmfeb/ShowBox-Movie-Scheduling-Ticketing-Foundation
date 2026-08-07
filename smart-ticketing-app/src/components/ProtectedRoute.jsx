@@ -12,7 +12,7 @@ function ProtectedRoute({ children, requiredRole }) {
   try {
     const user = JSON.parse(userStr);
     
-    // 🔥 THE FIX: Dono roles ko UPPERCASE mein convert karke check karo
+    // THE FIX: Dono roles ko UPPERCASE mein convert karke check karo
     const userRole = user.role ? user.role.toUpperCase() : "";
     const expectedRole = requiredRole ? requiredRole.toUpperCase() : "";
 

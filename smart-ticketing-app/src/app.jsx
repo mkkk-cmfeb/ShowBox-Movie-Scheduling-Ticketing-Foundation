@@ -8,7 +8,7 @@ import Auth from './pages/Auth.jsx';
 import AdminDashboard from './pages/AdminDashboard.jsx';
 import BookTicket from './pages/BookTicket.jsx';
 import SeatSelection from './pages/SeatSelection.jsx';
-import MyBookings from './pages/MyBookings.jsx'; // 👈 Ye import missing hoga!
+import MyBookings from './pages/MyBookings.jsx';
 import MyTickets from './pages/MyTickets.jsx';
 
 function App() {
