@@ -21,7 +21,6 @@ function BookTicket() {
 
   const API_BASE = "http://localhost:8080/api";
 
-  // Helper to generate 7 days with formatted text for the UI
   const generateNext7Days = () => {
     const dates = [];
     const today = new Date();
@@ -29,13 +28,11 @@ function BookTicket() {
       const nextDate = new Date(today);
       nextDate.setDate(today.getDate() + i);
 
-      // YYYY-MM-DD for backend filtering
       const yyyy = nextDate.getFullYear();
       const mm = String(nextDate.getMonth() + 1).padStart(2, '0');
       const dd = String(nextDate.getDate()).padStart(2, '0');
       const fullDate = `${yyyy}-${mm}-${dd}`;
 
-      // UI Text Formatting
       const dayName = nextDate.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase();
       const dayNum = nextDate.toLocaleDateString('en-US', { day: '2-digit' });
       const monthName = nextDate.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
@@ -47,26 +44,29 @@ function BookTicket() {
 
   const next7Days = generateNext7Days();
 
-  // 1. Fetch Movies, Cities, and Schedules on component load
+  // CORRECTED: We are now fetching Theatres here again alongside everything else
   useEffect(() => {
     setSelectedDate(next7Days[0].fullDate);
 
     const fetchBookingData = async () => {
       try {
-        const [moviesRes, schedulesRes, citiesRes] = await Promise.all([
+        const [moviesRes, schedulesRes, citiesRes, theatresRes] = await Promise.all([
           fetch(`${API_BASE}/Movies`),
           fetch(`${API_BASE}/ShowSchedules`),
-          fetch(`${API_BASE}/Cities`)
+          fetch(`${API_BASE}/Cities`),
+          fetch(`${API_BASE}/Theatres`) // Added this back!
         ]);
 
-        if (moviesRes.ok && schedulesRes.ok && citiesRes.ok) {
+        if (moviesRes.ok && schedulesRes.ok && citiesRes.ok && theatresRes.ok) {
           const allMovies = await moviesRes.json();
           const allSchedules = await schedulesRes.json();
           const allCities = await citiesRes.json();
+          const allTheatres = await theatresRes.json(); // Added this back!
 
           const currentMovie = allMovies.find(m => m.id.toString() === id.toString());
           setMovie(currentMovie || null);
           setCities(allCities);
+          setTheatres(allTheatres); // Added this back!
 
           if (currentMovie) {
             setSchedules(allSchedules.filter(s => s.movieId.toString() === id.toString()));
@@ -83,38 +83,17 @@ function BookTicket() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // 2. Fetch Theatres dynamically ONLY when a City is selected
-  useEffect(() => {
-    if (!selectedCity) {
-      setTheatres([]); // Clear theatres if no city is selected
-      return;
-    }
-
-    const fetchTheatresByCity = async () => {
-      try {
-        const response = await fetch(`${API_BASE}/Theatres/city/${selectedCity}`);
-        if (response.ok) {
-          setTheatres(await response.json());
-        }
-      } catch (error) {
-        console.error("Failed to fetch theatres", error);
-      }
-    };
-    fetchTheatresByCity();
-  }, [selectedCity]);
-
-  // Dropdown Handlers
   const handleCityChange = (e) => {
     setSelectedCity(e.target.value);
-    setSelectedTheatre(''); // Reset the theatre if the user changes the city
+    setSelectedTheatre(''); 
   };
 
   const handleTimeClick = (scheduleId) => {
     navigate(`/seats/${scheduleId}`);
   };
 
-  // Theatres are now inherently filtered by the backend
-  const availableTheatresInCity = theatres;
+  // CORRECTED: React is now filtering the list of theatres based on the chosen city
+  const availableTheatresInCity = theatres.filter(t => t.cityId.toString() === selectedCity.toString());
   
   const finalSchedules = schedules.filter(s => 
     s.showDate === selectedDate && 
@@ -129,7 +108,6 @@ function BookTicket() {
   return (
     <div style={{ padding: '30px 20px', backgroundColor: '#f4f4f5', minHeight: '100vh' }}>
       
-      {/* Invisible style block to hide the scrollbar for the date container */}
       <style>
         {`
           .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -139,7 +117,6 @@ function BookTicket() {
 
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
         
-        {/* Movie Header */}
         <div style={styles.headerCard}>
           <MoviePoster title={movie.title} style={styles.headerPoster} />
           <div>
@@ -148,7 +125,6 @@ function BookTicket() {
           </div>
         </div>
 
-        {/* BMS Style Date Calendar */}
         <div style={styles.dateCalendarWrapper}>
           <div className="hide-scrollbar" style={styles.dateContainer}>
             {next7Days.map((dateObj) => {
@@ -174,7 +150,6 @@ function BookTicket() {
           </div>
         </div>
 
-        {/* Dropdown Filters */}
         <div style={styles.filterSection}>
           <select 
             value={selectedCity} 
@@ -198,7 +173,6 @@ function BookTicket() {
           </select>
         </div>
 
-        {/* Showtimes Result */}
         {selectedTheatre && (
           <div style={styles.theatreCard}>
             <h3 style={{ margin: '0 0 5px 0', color: '#34495e' }}>{selectedTheatreDetails?.name}</h3>
@@ -207,8 +181,6 @@ function BookTicket() {
             {finalSchedules.length > 0 ? (
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                 {finalSchedules.map(show => {
-                  
-                  // Safely extracts the time regardless of if it's formatted as a Date-Time or just Time
                   const timeString = show.showTime.includes('T') 
                     ? show.showTime.split('T')[1].substring(0, 5) 
                     : show.showTime.substring(0, 5);
@@ -236,24 +208,16 @@ function BookTicket() {
 const styles = {
   headerCard: { backgroundColor: 'white', padding: '24px 30px', borderRadius: '12px 12px 0 0', borderBottom: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '25px' },
   headerPoster: { width: '90px', height: '135px', backgroundSize: 'cover', backgroundPosition: 'center', borderRadius: '8px', boxShadow: '0 6px 14px rgba(0,0,0,0.2)', flexShrink: 0 },
-  
-  // Date Calendar Styles
   dateCalendarWrapper: { backgroundColor: 'white', padding: '15px 20px', borderRadius: '0 0 12px 12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', marginBottom: '25px' },
   dateContainer: { display: 'flex', gap: '15px', overflowX: 'auto', padding: '5px 0' },
-  
   activeDateBtn: { backgroundColor: '#F84464', border: 'none', borderRadius: '8px', padding: '10px 15px', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', minWidth: '65px', boxShadow: '0 4px 8px rgba(248,68,100,0.3)' },
   inactiveDateBtn: { backgroundColor: 'transparent', border: 'none', borderRadius: '8px', padding: '10px 15px', display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer', minWidth: '65px', transition: 'background-color 0.2s' },
-  
   activeTextSmall: { color: 'white', fontSize: '0.75rem', fontWeight: '500' },
   inactiveTextSmall: { color: '#7f8c8d', fontSize: '0.75rem', fontWeight: '500' },
   activeTextLarge: { color: 'white', fontSize: '1.4rem', fontWeight: 'bold', margin: '2px 0' },
   inactiveTextLarge: { color: '#2c3e50', fontSize: '1.4rem', fontWeight: 'bold', margin: '2px 0' },
-  
-  // Dropdowns
   filterSection: { display: 'flex', gap: '15px', marginBottom: '25px', flexWrap: 'wrap' },
   selectInput: { padding: '14px', borderRadius: '8px', border: '1px solid #dcdde1', fontSize: '1rem', flex: 1, minWidth: '250px', backgroundColor: 'white', outline: 'none', color: '#2c3e50', cursor: 'pointer' },
-  
-  // Theatre & Shows
   theatreCard: { backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' },
   timeButton: { padding: '10px 25px', backgroundColor: '#fff', color: '#27ae60', border: '2px solid #27ae60', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.1rem', transition: 'all 0.2s' },
   noShowsText: { color: '#e74c3c', backgroundColor: '#fdf3f2', padding: '15px', borderRadius: '6px', display: 'inline-block', fontSize: '0.95rem' }
